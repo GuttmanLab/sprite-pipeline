@@ -7,17 +7,11 @@ Aim: A Snakemake workflow to process DNA-DNA SPRITE-seq data
 import os 
 import sys
 
-try:
-    email = config['email']
-except:
-    print("Won't send email on error")
-    email = None
-
 
 #Location of scripts
 barcode_id_jar = "scripts/java/BarcodeIdentification_v1.2.0.jar"
 lig_eff = "scripts/python/get_ligation_efficiency.py"
-split_fq = "scripts/get_full_barcodes.py"
+split_fq = "scripts/python/get_full_barcodes.py"
 add_chr = "scripts/python/ensembl2ucsc.py"
 get_clusters = "scripts/python/get_clusters.py"
 
@@ -30,6 +24,11 @@ except:
 
 configfile: config_path
 
+try:
+    email = config['email']
+except:
+    print("Won't send email on error")
+    email = None
 
 try:
     bid_config = config['bID']
@@ -60,6 +59,14 @@ except:
     print('Bowtie2 index not specified in config.yaml')
     sys.exit() #no default, exit
 
+
+try:
+    mask = config['mask'][config['assembly']]
+except:
+    print('Mask path not specified in config.yaml')
+    sys.exit() #no default, exit
+
+
 #get all samples from fastq Directory using the fastq2json.py scripts, then just
 #load the json file with the samples
 FILES = json.load(open("./samples.json"))
@@ -79,14 +86,14 @@ LE_LOG_ALL = ["workup/ligation_efficiency.txt"]
 MASKED = expand("workup/alignments/{sample}.DNA.chr.masked.bam", sample=ALL_SAMPLES)
 MULTI_QC = ["workup/qc/multiqc_report.html"]
 
-CHR_ALL = expand("workup/alignments/{sample}.DNA.chr.bam", sample=ALL_SAMPLES)
+CHR_DNA = expand("workup/alignments/{sample}.DNA.chr.bam", sample=ALL_SAMPLES)
 
 #Bowtie2 alignment
 Bt2_DNA_ALIGN = expand("workup/alignments/{sample}.DNA.bowtie2.mapq20.bam", 
                        sample=ALL_SAMPLES)
 
 #DNA-DNA
-BARCODEID_DNA = expand("workup/fastqs/{sample}_{read}.barcoded_dpm.fastq.gz", 
+BARCODEID_DNA = expand("workup/fastqs/{sample}_{read}.barcoded.fastq.gz", 
                        sample = ALL_SAMPLES, read = ["R1", "R2"])
 BCS_DNA = expand("workup/alignments/{sample}.DNA.chr.bam", sample=ALL_SAMPLES)
 CLUSTERS_DNA = expand("workup/clusters/{sample}.DNA.clusters", sample=ALL_SAMPLES)
@@ -244,13 +251,13 @@ rule repeat_mask:
         '''
 
 
-rule make_clusters_DNA:
+rule make_clusters:
     input:
         "workup/alignments/{sample}.DNA.chr.masked.bam",
     output:
         "workup/clusters/{sample}.DNA.clusters"
     log:
-        "workup/clusters/{sample}.make_clusters.log"
+        "workup/logs/{sample}.make_clusters.log"
     conda:
         "envs/python_dep.yaml"
     shell:

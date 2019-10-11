@@ -32,7 +32,7 @@ def main():
     pattern = re.compile('\[([a-zA-Z0-9_\-]+)\]')
 
     with file_open(read_1_path) as read_1, \
-    gzip.open(dpm_out_path, 'wt') as dpm_out, \
+    gzip.open(full_out_path, 'wt') as dpm_out, \
     gzip.open(short_out_path, 'wt') as short_out:
         for qname, seq, thrd, qual in fastq_parse(read_1):
                 barcodes = pattern.findall(qname)
@@ -44,7 +44,7 @@ def main():
                     dpm_out.write(qname + '\n' + seq + '\n' + thrd + '\n' + qual + '\n')
 
     print('Reads without full barcode:', incomplete)
-    print('Full reads out:', dpm_count)
+    print('Full reads out:', full_count)
     
 
 

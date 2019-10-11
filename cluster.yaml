@@ -5,6 +5,13 @@ __default__:
     nodes: 1
     output: "workup/logs/cluster/{rule}.{wildcards.sample}.out"
     error: "workup/logs/cluster/{rule}.{wildcards.sample}.err"
+cat_ligation_efficiency:
+    time: "05:00:00"
+    mem: 20g
+    cpus: 1
+    nodes: 1
+    output: "workup/logs/cluster/{rule}.out"
+    error: "workup/logs/cluster/{rule}.err"
 bowtie2_align:
     time: "12:00:00"
     mem: 50g
