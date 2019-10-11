@@ -1,0 +1,5 @@
+channels:
+  - bioconda
+dependencies:
+  - pysam=0.15.0.1
+  - samtools

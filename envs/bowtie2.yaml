@@ -1,0 +1,5 @@
+channels:
+  - bioconda
+dependencies:
+  - bowtie2=2.3.5
+  - samtools

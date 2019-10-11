@@ -1,0 +1,15 @@
+#email to which errors will be sent
+email: "pchovanec@lncrna.caltech.edu"
+#Location of the config file for barcodeIdentification
+bID: "./config.txt"
+#Currently "mm10" and "hg38" available
+assembly: "mm10"
+#Number of barcodes used (this includes DPM/RPM for RNA-DNA)
+num_tags: "5"
+#Repeat mask used for filtering DNA contacts
+mask:
+    mm10: "/groups/guttman/Peter/genomes/GRCm38.p6/blacklist.rmsk.mm10.milliDivLessThan140.bed"
+    hg38: "/groups/guttman/Peter/genomes/GRCh38/hg38_blacklist_rmsk140millidev.bed"
+bowtie2_index:
+    mm10: "/groups/guttman/Peter/genomes/GRCm38.p6/GRCm38.p6"
+    hg38: "/groups/guttman/Peter/genomes/GRCh38/GRCh38"
