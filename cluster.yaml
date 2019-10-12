@@ -26,3 +26,10 @@ multiqc:
     nodes: 1
     output: "workup/logs/cluster/{rule}.out"
     error: "workup/logs/cluster/{rule}.err"
+plot_cluster_size:
+    time: "05:00:00"
+    mem: 50g
+    cpus: 1
+    nodes: 1
+    output: "workup/logs/cluster/{rule}.out"
+    error: "workup/logs/cluster/{rule}.err"

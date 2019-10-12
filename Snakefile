@@ -315,7 +315,9 @@ rule plot_cluster_size:
         "cluster_sizes.pdf",
         "cluster_sizes.png"
     log:
-        "workup/logs/{sample}.cluster_sizes.log"
+        "workup/logs/cluster_sizes.log"
+    conda:
+        "envs/r.yaml"
     shell:
         '''
         Rscript scripts/r/get_cluster_size_distribution.r \
@@ -333,16 +335,18 @@ rule make_heatmap_matrix:
         "workup/heatmap/{sample}.DNA.final.txt",
     conda:
         "envs/python_dep.yaml"
-    shell:    
+    log:
+        "workup/clusters/{sample}.DNA.matrix.log"
+    shell:
         '''
         python {clusters_heatmap} \
-        --clusters {wildcards.sample}.DNA.clusters \
-        --raw_contacts {wildcards.sample}.DNA.raw.txt \
-        --biases {wildcards.sample}.DNA.bias.txt \
-        --iced {wildcards.sample}.DNA.iced.txt \
-        --output {wildcards.sample}.DNA.final.txt \
+        --clusters workup/clusters/{wildcards.sample}.DNA.clusters \
+        --raw_contacts workup/heatmap/{wildcards.sample}.DNA.raw.txt \
+        --biases workup/heatmap/{wildcards.sample}.DNA.bias.txt \
+        --iced workup/heatmap/{wildcards.sample}.DNA.iced.txt \
+        --output workup/heatmap/{wildcards.sample}.DNA.final.txt \
         --assembly {assembly} \
         --chromosome {chromosome} \
-        --downweighting {n_over_two} \
+        --downweighting {downweighting} \
         --hicorrector {hicorrector}
         '''
