@@ -109,6 +109,9 @@ TRIM = expand("workup/trimmed/{sample}_{read}.fq.gz", sample = ALL_SAMPLES,
 TRIM_LOG = expand("workup/trimmed/{sample}_{read}.fastq.gz_trimming_report.txt", 
                   sample = ALL_SAMPLES, read = ["R1", "R2"])
 LE_LOG_ALL = ["workup/ligation_efficiency.txt"]
+TRIM_RD = expand(["workup/trimmed/{sample}_R1_val_1_RDtrim.fq.gz", 
+                  "workup/trimmed/{sample}_R2_val_2_RDtrim.fq.gz"], 
+                  sample = ALL_SAMPLES)
 MASKED = expand("workup/alignments/{sample}.DNA.chr.masked.bam", sample=ALL_SAMPLES)
 MULTI_QC = ["workup/qc/multiqc_report.html"]
 
@@ -130,7 +133,7 @@ CLUSTERS_HP = expand(["workup/heatmap/{sample}.DNA.iced.txt",
         "workup/heatmap/{sample}.DNA.final.txt"], sample=ALL_SAMPLES)
 
 rule all:
-    input: ALL_FASTQ + TRIM + TRIM_LOG + BARCODEID_DNA + LE_LOG_ALL + BARCODEID_DNA +
+    input: ALL_FASTQ + TRIM + TRIM_LOG + TRIM_RD + BARCODEID_DNA + LE_LOG_ALL + BARCODEID_DNA +
             Bt2_DNA_ALIGN + CHR_DNA + MASKED + CLUSTERS_DNA + MULTI_QC + CLUSTERS_PLOT +
             CLUSTERS_HP
 
@@ -171,12 +174,35 @@ rule adaptor_trimming_pe:
         {input} &> {log}"
 
 
+rule cutadapt:
+    '''
+    Trim DPM if read through reads
+    DPM from right GATCGGAAGAG
+    DPM from left GGTGGTCTT ^ anchored (only appears at the start of read)
+    '''
+    input:
+        ["workup/trimmed/{sample}_R1_val_1.fq.gz", 
+        "workup/trimmed/{sample}_R2_val_2.fq.gz"]
+    output:
+        fastq1="workup/trimmed/{sample}_R1_val_1_RDtrim.fq.gz",
+        fastq2="workup/trimmed/{sample}_R2_val_2_RDtrim.fq.gz",
+        qc="workup/trimmed/{sample}.RDtrim.qc.txt"
+    threads: 10
+    params:
+        adapters_r1 = "-a GATCGGAAGAG -g GGTGGTCTTT",
+        adapters_r2 = "",
+        others = "--minimum-length 20"
+    log:
+        "logs/cutadapt/{sample}.log"
+    wrapper:
+        "0.38.0/bio/cutadapt/pe"
+
 
 #Identify barcodes using BarcodeIdentification_v1.2.0.jar
 rule barcode_id:
     input:
-        r1 = "workup/trimmed/{sample}_R1_val_1.fq.gz",
-        r2 = "workup/trimmed/{sample}_R2_val_2.fq.gz"
+        r1 = "workup/trimmed/{sample}_R1_val_1_RDtrim.fq.gz",
+        r2 = "workup/trimmed/{sample}_R2_val_2_RDtrim.fq.gz"
     output:
     #if statements have to be inline (each input is like a function)
         r1_barcoded = "workup/fastqs/{sample}_R1.barcoded.fastq.gz",
