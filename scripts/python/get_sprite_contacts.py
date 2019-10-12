@@ -64,8 +64,8 @@ def parse_arguments():
                         metavar = "ASSEMBLY",
                         action = "store",
                         choices = ["mm9", "mm10", "hg19", "hg38"],
-                        default = "mm9",
-                        help = "The genome assembly. (default mm9)")
+                        default = "mm10",
+                        help = "The genome assembly. (default mm10)")
 
     parser.add_argument('--chromosome',
                         metavar = "CHROM",

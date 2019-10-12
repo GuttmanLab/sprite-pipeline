@@ -14,3 +14,21 @@ mask:
 bowtie2_index:
     mm10: "/groups/guttman/Peter/genomes/GRCm38.p6/GRCm38.p6"
     hg38: "/groups/guttman/Peter/genomes/GRCh38/GRCh38"
+
+#Setting for mating heatmap matrix
+#Plot a chromosome 'chr1' or plot genome wide 'genome'
+chromosome:
+    - genome
+# Options 'none', 'n_minus_one', 'n_over_two'
+downweighting:
+    - n_over_two
+#Number of ICE iterations 
+ice_iterations:
+    - 100
+#Contact matrix resolution in bp
+resolution:
+    - 1000000
+min_cluster_size:
+    - 2
+max_cluster_size:
+    - 1000

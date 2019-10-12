@@ -14,6 +14,9 @@ lig_eff = "scripts/python/get_ligation_efficiency.py"
 split_fq = "scripts/python/get_full_barcodes.py"
 add_chr = "scripts/python/ensembl2ucsc.py"
 get_clusters = "scripts/python/get_clusters.py"
+get_cluster_size = "scripts/r/get_cluster_size_distribution.r"
+hicorrector = "scripts/HiCorrector_1.2/bin/ic"
+clusters_heatmap = "scripts/python/get_sprite_contacts.py"
 
 #Load config.yaml file
 
@@ -66,6 +69,29 @@ except:
     print('Mask path not specified in config.yaml')
     sys.exit() #no default, exit
 
+try:
+    chromosome = config['chromosome']
+except:
+    chromosome = 'genome'
+    print('Defaulting to "genome"')
+try:
+    downweighting = config['downweighting']
+except:
+    downweighting = 'n_over_two'
+    print('Defaulting to "n_over_two"')
+
+try:
+    ice_iterations = config['ice_iterations']
+    resolution = config['resolution']
+    min_cluster_size = config['min_cluster_size']
+    max_cluster_size = config['max_cluster_size']
+except:
+    ice_iterations = 100
+    resolution = 1000000
+    min_cluster_size = 2
+    max_cluster_size = 1000    
+
+
 
 #get all samples from fastq Directory using the fastq2json.py scripts, then just
 #load the json file with the samples
@@ -97,12 +123,16 @@ BARCODEID_DNA = expand("workup/fastqs/{sample}_{read}.barcoded.fastq.gz",
                        sample = ALL_SAMPLES, read = ["R1", "R2"])
 BCS_DNA = expand("workup/alignments/{sample}.DNA.chr.bam", sample=ALL_SAMPLES)
 CLUSTERS_DNA = expand("workup/clusters/{sample}.DNA.clusters", sample=ALL_SAMPLES)
-
-
+CLUSTERS_PLOT = ["cluster_sizes.pdf", "cluster_sizes.png"]
+CLUSTERS_HP = expand(["workup/heatmap/{sample}.DNA.iced.txt",
+        "workup/heatmap/{sample}.DNA.bias.txt",
+        "workup/heatmap/{sample}.DNA.raw.txt",
+        "workup/heatmap/{sample}.DNA.final.txt"], sample=ALL_SAMPLES)
 
 rule all:
     input: ALL_FASTQ + TRIM + TRIM_LOG + BARCODEID_DNA + LE_LOG_ALL + BARCODEID_DNA +
-            Bt2_DNA_ALIGN + CHR_DNA + MASKED + CLUSTERS_DNA + MULTI_QC
+            Bt2_DNA_ALIGN + CHR_DNA + MASKED + CLUSTERS_DNA + MULTI_QC + CLUSTERS_PLOT +
+            CLUSTERS_HP
 
 
 
@@ -264,7 +294,6 @@ rule make_clusters:
         "python {get_clusters} -i {input} -o {output} -n {num_tags} &> {log}"
 
 
-
 rule multiqc:
     input:
         #needs to be the last file produced in the pipeline 
@@ -277,3 +306,43 @@ rule multiqc:
         "envs/qc.yaml"
     shell: 
         "multiqc workup -o workup/qc"
+
+
+rule plot_cluster_size:
+    input:
+        expand("workup/clusters/{sample}.DNA.clusters", sample=ALL_SAMPLES)
+    output:
+        "cluster_sizes.pdf",
+        "cluster_sizes.png"
+    log:
+        "workup/logs/{sample}.cluster_sizes.log"
+    shell:
+        '''
+        Rscript scripts/r/get_cluster_size_distribution.r \
+            workup/clusters/ \
+            DNA.clusters
+        '''
+
+rule make_heatmap_matrix:
+    input:
+        "workup/clusters/{sample}.DNA.clusters"
+    output:
+        "workup/heatmap/{sample}.DNA.iced.txt",
+        "workup/heatmap/{sample}.DNA.bias.txt",
+        "workup/heatmap/{sample}.DNA.raw.txt",
+        "workup/heatmap/{sample}.DNA.final.txt",
+    conda:
+        "envs/python_dep.yaml"
+    shell:    
+        '''
+        python {clusters_heatmap} \
+        --clusters {wildcards.sample}.DNA.clusters \
+        --raw_contacts {wildcards.sample}.DNA.raw.txt \
+        --biases {wildcards.sample}.DNA.bias.txt \
+        --iced {wildcards.sample}.DNA.iced.txt \
+        --output {wildcards.sample}.DNA.final.txt \
+        --assembly {assembly} \
+        --chromosome {chromosome} \
+        --downweighting {n_over_two} \
+        --hicorrector {hicorrector}
+        '''

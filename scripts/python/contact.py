@@ -99,8 +99,9 @@ class Contacts:
                 bins = set()
 
                 for read in reads:
-                    chromosome, position = read.split(':')
-                    genome_pos = self.get_genomic_position(chromosome, position)
+                    _, coord = read.split('_')
+                    chrom, start, end = coord.replace('-', ':').split(':')
+                    genome_pos = self.get_genomic_position(chrom, start)
                     if genome_pos is not None:  # genome_pos == None if chrom not in dict
                         bins.add(genome_pos)
 
@@ -133,9 +134,10 @@ class Contacts:
                 bins = set()
 
                 for read in reads:
-                    chrom, position = read.split(':')
+                    _, coord = read.split('_')
+                    chrom, start, end = coord.replace('-', ':').split(':')
                     if chrom == self._chromosome:
-                        read_bin = int(position) // self._resolution
+                        read_bin = int(start) // self._resolution
                         bins.add(read_bin)
 
                 self.add_bins_to_contacts(bins)                

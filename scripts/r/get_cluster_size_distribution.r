@@ -1,6 +1,10 @@
 #!/usr/bin/env Rscript
 
-library(ggplot2)
+if(!require(ggplot2)){
+    install.packages("ggplot2", repos='http://cran.us.r-project.org')
+    library(ggplot2)
+}
+
 
 SINGLETON        <- 1
 FROM_2_TO_10     <- 2
