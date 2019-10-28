@@ -3,9 +3,15 @@
 # This program plots SPRITE clusters as a barplot, with each bar corresponding
 # to the read-coverage over a chromosome. If passed only a single clusters
 # file, this program will plot absolute coverage   
+if(!require(ggplot2)){
+  install.packages("ggplot2", repos='http://cran.us.r-project.org')
+  library(ggplot2)
+}
+if(!require(optparse)){
+  install.packages("optparse", repos='http://cran.us.r-project.org')
+  library(optparse)
+}
 
-library(ggplot2)
-library(optparse)
 
 refs <- c("chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8",
           "chr9", "chr10", "chr11", "chr12", "chr13", "chr14", "chr15",
