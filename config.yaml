@@ -1,0 +1,34 @@
+#email to which errors will be sent
+email: "pchovanec@lncrna.caltech.edu"
+#Location of the config file for barcodeIdentification
+bID: "./config.txt"
+#Currently "mm10" and "hg38" available
+assembly: "mm10"
+#Number of barcodes used (this includes DPM/RPM for RNA-DNA)
+num_tags: "5"
+#Repeat mask used for filtering DNA contacts
+mask:
+    mm10: "mm10_blacklist.rmsk.milliDivLessThan140.bed"
+    hg38: "hg38_blacklist_rmsk.milliDivLessThan140.bed"
+#Bowtie2 indexes location with prefix
+bowtie2_index:
+    mm10: "/groups/guttman/Peter/genomes/GRCm38.p6/GRCm38.p6"
+    hg38: "/groups/guttman/Peter/genomes/GRCh38/GRCh38"
+
+#Setting for mating heatmap matrix
+#Plot a chromosome 'chr1' or plot genome wide 'genome'
+chromosome:
+    - genome
+# Options 'none', 'n_minus_one', 'n_over_two'
+downweighting:
+    - n_over_two
+#Number of ICE iterations 
+ice_iterations:
+    - 100
+#Contact matrix resolution in bp
+resolution:
+    - 1000000
+min_cluster_size:
+    - 2
+max_cluster_size:
+    - 1000

@@ -1,0 +1,5 @@
+channels:
+  - bioconda
+dependencies:
+  - trim-galore=0.6.2
+  - fastqc
