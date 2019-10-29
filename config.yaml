@@ -1,5 +1,5 @@
 #email to which errors will be sent
-email: "pchovanec@lncrna.caltech.edu"
+email: "your_email@domain"
 #Location of the config file for barcodeIdentification
 bID: "./config.txt"
 #Currently "mm10" and "hg38" available
@@ -32,3 +32,6 @@ min_cluster_size:
     - 2
 max_cluster_size:
     - 1000
+#Max value for heatmap plotting
+max_value:
+    - 255

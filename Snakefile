@@ -85,11 +85,13 @@ try:
     resolution = config['resolution']
     min_cluster_size = config['min_cluster_size']
     max_cluster_size = config['max_cluster_size']
+    max_val = config['max_value']
 except:
     ice_iterations = 100
     resolution = 1000000
     min_cluster_size = 2
-    max_cluster_size = 1000    
+    max_cluster_size = 1000
+    max_val = 255
 
 
 
@@ -375,4 +377,21 @@ rule make_heatmap_matrix:
         --chromosome {chromosome} \
         --downweighting {downweighting} \
         --hicorrector {hicorrector}
+        '''
+
+
+rule plot_heatmap:
+    input:
+        "workup/heatmap/{sample}.DNA.final.txt"
+    output:
+        "workup/heatmap/{sample}.DNA.final.pdf"
+    log:
+        "workup/logs/heatmap.log"
+    conda:
+        "envs/r.yaml"
+    shell:
+        '''
+        Rscript scripts/r/plot_heatmap.r \
+            -i {input} \
+            -m {max_val}
         '''
