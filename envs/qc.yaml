@@ -1,4 +1,4 @@
 channels:
     - bioconda
 dependencies:
-    - multiqc
+    - multiqc=1.6

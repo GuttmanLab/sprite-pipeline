@@ -134,10 +134,13 @@ CLUSTERS_HP = expand(["workup/heatmap/{sample}.DNA.iced.txt",
         "workup/heatmap/{sample}.DNA.raw.txt",
         "workup/heatmap/{sample}.DNA.final.txt"], sample=ALL_SAMPLES)
 
+PLOT = expand(["workup/heatmap/{sample}.DNA.final.pdf",
+        "workup/heatmap/{sample}.DNA.final.png"], sample=ALL_SAMPLES)
+
 rule all:
     input: ALL_FASTQ + TRIM + TRIM_LOG + TRIM_RD + BARCODEID_DNA + LE_LOG_ALL + BARCODEID_DNA +
             Bt2_DNA_ALIGN + CHR_DNA + MASKED + CLUSTERS_DNA + MULTI_QC + CLUSTERS_PLOT +
-            CLUSTERS_HP
+            CLUSTERS_HP + PLOT
 
 
 
@@ -384,14 +387,15 @@ rule plot_heatmap:
     input:
         "workup/heatmap/{sample}.DNA.final.txt"
     output:
-        "workup/heatmap/{sample}.DNA.final.pdf"
+        "workup/heatmap/{sample}.DNA.final.pdf",
+        "workup/heatmap/{sample}.DNA.final.png"
     log:
-        "workup/logs/heatmap.log"
+        "workup/logs/{sample}.heatmap.log"
     conda:
         "envs/r.yaml"
     shell:
         '''
-        Rscript scripts/r/plot_heatmap.r \
+        Rscript scripts/r/plot_heatmap.R \
             -i {input} \
             -m {max_val}
         '''
