@@ -6,7 +6,9 @@ Aim: A Snakemake workflow to process DNA-DNA SPRITE-seq data
 
 import os 
 import sys
+import datetime
 
+#when making dag.pdf all print statements need to be commented out, otherwise it will cause an error!
 
 #Location of scripts
 barcode_id_jar = "scripts/java/BarcodeIdentification_v1.2.0.jar"
@@ -17,6 +19,10 @@ get_clusters = "scripts/python/get_clusters.py"
 get_cluster_size = "scripts/r/get_cluster_size_distribution.r"
 hicorrector = "scripts/HiCorrector_1.2/bin/ic"
 clusters_heatmap = "scripts/python/get_sprite_contacts.py"
+
+#Copy config file into logs
+v = datetime.datetime.now()
+run_date = v.strftime('%Y.%m.%d.')
 
 #Load config.yaml file
 
@@ -32,6 +38,13 @@ try:
 except:
     print("Won't send email on error")
     email = None
+
+try:
+    out_dir = config['output_dir']
+    print('All data will be written to:', out_dir)
+except:
+    out_dir = ''
+    print('Defaulting to working directory as output directory')
 
 try:
     bid_config = config['bID']
@@ -50,7 +63,7 @@ except:
 #Make pipeline compatible for multiple assemblies
 try:
     assembly = config['assembly']
-    assert assembly in ['mm10', 'hg38'], 'Only "mm10" or "hg38" currently supported'
+    assert assembly in ['mm10', 'hg38', 'halo'], 'Only "mm10" or "hg38" currently supported'
     print('Using', assembly)
 except:
     print('Config "assembly" not specified, defaulting to "mm10"')
@@ -93,11 +106,17 @@ except:
     max_cluster_size = 1000
     max_val = 255
 
+try:
+    samples = config['samples']
+    print('Using samples file:', samples)
+except:
+    samples = './samples.json'
+    print('Defaulting to working directory for samples json file')
 
 
 #get all samples from fastq Directory using the fastq2json.py scripts, then just
 #load the json file with the samples
-FILES = json.load(open("./samples.json"))
+FILES = json.load(open(samples))
 ALL_SAMPLES = sorted(FILES.keys())
 
 ALL_FASTQ = []
@@ -105,42 +124,41 @@ for SAMPLE, file in FILES.items():
     ALL_FASTQ.extend([os.path.abspath(i) for i in file.get('R1')])
     ALL_FASTQ.extend([os.path.abspath(i) for i in file.get('R2')])
 
+CONFIG = [out_dir + "workup/logs/config_" + run_date + "log"]
+
 #Shared
-TRIM = expand("workup/trimmed/{sample}_{read}.fq.gz", sample = ALL_SAMPLES, 
+TRIM = expand(out_dir + "workup/trimmed/{sample}_{read}.fq.gz", sample = ALL_SAMPLES, 
               read = ["R1_val_1", "R2_val_2"])
-TRIM_LOG = expand("workup/trimmed/{sample}_{read}.fastq.gz_trimming_report.txt", 
+TRIM_LOG = expand(out_dir + "workup/trimmed/{sample}_{read}.fastq.gz_trimming_report.txt", 
                   sample = ALL_SAMPLES, read = ["R1", "R2"])
-LE_LOG_ALL = ["workup/ligation_efficiency.txt"]
-TRIM_RD = expand(["workup/trimmed/{sample}_R1_val_1_RDtrim.fq.gz", 
-                  "workup/trimmed/{sample}_R2_val_2_RDtrim.fq.gz"], 
+LE_LOG_ALL = [out_dir + "workup/ligation_efficiency.txt"]
+TRIM_RD = expand(out_dir + "workup/trimmed/{sample}_R1.barcoded.RDtrim.fastq.gz", 
                   sample = ALL_SAMPLES)
-MASKED = expand("workup/alignments/{sample}.DNA.chr.masked.bam", sample=ALL_SAMPLES)
-MULTI_QC = ["workup/qc/multiqc_report.html"]
+MASKED = expand(out_dir + "workup/alignments/{sample}.DNA.chr.masked.bam", sample=ALL_SAMPLES)
+MULTI_QC = [out_dir + "workup/qc/multiqc_report.html"]
 
-CHR_DNA = expand("workup/alignments/{sample}.DNA.chr.bam", sample=ALL_SAMPLES)
+CHR_DNA = expand(out_dir + "workup/alignments/{sample}.DNA.chr.bam", sample=ALL_SAMPLES)
+BARCODE_FULL = expand(out_dir + "workup/fastqs/{sample}_R1.barcoded_full.fastq.gz", sample=ALL_SAMPLES)
 
-#Bowtie2 alignment
 Bt2_DNA_ALIGN = expand("workup/alignments/{sample}.DNA.bowtie2.mapq20.bam", 
                        sample=ALL_SAMPLES)
-
 #DNA-DNA
-BARCODEID_DNA = expand("workup/fastqs/{sample}_{read}.barcoded.fastq.gz", 
+BARCODEID = expand(out_dir + "workup/fastqs/{sample}_{read}.barcoded.fastq.gz", 
                        sample = ALL_SAMPLES, read = ["R1", "R2"])
-BCS_DNA = expand("workup/alignments/{sample}.DNA.chr.bam", sample=ALL_SAMPLES)
-CLUSTERS_DNA = expand("workup/clusters/{sample}.DNA.clusters", sample=ALL_SAMPLES)
-CLUSTERS_PLOT = ["cluster_sizes.pdf", "cluster_sizes.png"]
-CLUSTERS_HP = expand(["workup/heatmap/{sample}.DNA.iced.txt",
-        "workup/heatmap/{sample}.DNA.bias.txt",
-        "workup/heatmap/{sample}.DNA.raw.txt",
-        "workup/heatmap/{sample}.DNA.final.txt"], sample=ALL_SAMPLES)
+CLUSTERS = expand(out_dir + "workup/clusters/{sample}.DNA.clusters", sample=ALL_SAMPLES)
+CLUSTERS_PLOT = [out_dir + "workup/clusters/cluster_sizes.pdf", out_dir + "workup/clusters/cluster_sizes.png"]
+CLUSTERS_HP = expand([out_dir + "workup/heatmap/{sample}.DNA.iced.txt",
+        out_dir + "workup/heatmap/{sample}.DNA.bias.txt",
+        out_dir + "workup/heatmap/{sample}.DNA.raw.txt",
+        out_dir + "workup/heatmap/{sample}.DNA.final.txt"], sample=ALL_SAMPLES)
 
-PLOT = expand(["workup/heatmap/{sample}.DNA.final.pdf",
-        "workup/heatmap/{sample}.DNA.final.png"], sample=ALL_SAMPLES)
+PLOT = expand([out_dir + "workup/heatmap/{sample}.DNA.final.pdf",
+        out_dir + "workup/heatmap/{sample}.DNA.final.png"], sample=ALL_SAMPLES)
 
 rule all:
-    input: ALL_FASTQ + TRIM + TRIM_LOG + TRIM_RD + BARCODEID_DNA + LE_LOG_ALL + BARCODEID_DNA +
-            Bt2_DNA_ALIGN + CHR_DNA + MASKED + CLUSTERS_DNA + MULTI_QC + CLUSTERS_PLOT +
-            CLUSTERS_HP + PLOT
+    input: CONFIG + ALL_FASTQ + TRIM + TRIM_LOG + BARCODE_FULL + BARCODEID + LE_LOG_ALL +
+           TRIM_RD + Bt2_DNA_ALIGN + CHR_DNA + MASKED + CLUSTERS + MULTI_QC + CLUSTERS_PLOT +
+           CLUSTERS_HP + PLOT
 
 
 
@@ -154,19 +172,22 @@ if email != None:
 #Trimming and barcode identification
 ####################################################################################################
 
-#Trim adaptors
-#multiple cores requires pigz to be installed on the system
+
 rule adaptor_trimming_pe:
+    '''
+    #Trim adaptors
+    #multiple cores requires pigz to be installed on the system
+    '''
     input:
         [lambda wildcards: FILES[wildcards.sample]['R1'],
         lambda wildcards: FILES[wildcards.sample]['R2']]
     output:
-         "workup/trimmed/{sample}_R1_val_1.fq.gz",
-         "workup/trimmed/{sample}_R1.fastq.gz_trimming_report.txt",
-         "workup/trimmed/{sample}_R2_val_2.fq.gz",
-         "workup/trimmed/{sample}_R2.fastq.gz_trimming_report.txt"
+         out_dir + "workup/trimmed/{sample}_R1_val_1.fq.gz",
+         out_dir + "workup/trimmed/{sample}_R1.fastq.gz_trimming_report.txt",
+         out_dir + "workup/trimmed/{sample}_R2_val_2.fq.gz",
+         out_dir + "workup/trimmed/{sample}_R2.fastq.gz_trimming_report.txt"
     log:
-        "workup/logs/{sample}.trim_galore.logs"
+        out_dir + "workup/logs/{sample}.trim_galore.logs"
     conda:
         "envs/trim_galore.yaml"
     shell:
@@ -175,45 +196,32 @@ rule adaptor_trimming_pe:
         --gzip \
         --quality 20 \
         --fastqc \
-        -o workup/trimmed/ \
+        -o {out_dir}workup/trimmed/ \
         {input} &> {log}"
 
 
-rule cutadapt:
-    '''
-    Trim DPM if read through reads
-    DPM from right GATCGGAAGAG
-    DPM from left GGTGGTCTT ^ anchored (only appears at the start of read)
+rule log_config:
+    '''Copy config.yaml and place in logs folder with the date run
     '''
     input:
-        ["workup/trimmed/{sample}_R1_val_1.fq.gz", 
-        "workup/trimmed/{sample}_R2_val_2.fq.gz"]
+        config_path
     output:
-        fastq1="workup/trimmed/{sample}_R1_val_1_RDtrim.fq.gz",
-        fastq2="workup/trimmed/{sample}_R2_val_2_RDtrim.fq.gz",
-        qc="workup/trimmed/{sample}.RDtrim.qc.txt"
-    threads: 10
-    params:
-        adapters_r1 = "-a GATCGGAAGAG -g GGTGGTCTTT",
-        adapters_r2 = "",
-        others = "--minimum-length 20"
-    log:
-        "logs/cutadapt/{sample}.log"
-    wrapper:
-        "0.38.0/bio/cutadapt/pe"
+        out_dir + "workup/logs/config_" + run_date + "log"
+    shell:
+        "cp {input} {output}"
 
 
 #Identify barcodes using BarcodeIdentification_v1.2.0.jar
 rule barcode_id:
     input:
-        r1 = "workup/trimmed/{sample}_R1_val_1_RDtrim.fq.gz",
-        r2 = "workup/trimmed/{sample}_R2_val_2_RDtrim.fq.gz"
+        r1 = out_dir + "workup/trimmed/{sample}_R1_val_1.fq.gz",
+        r2 = out_dir + "workup/trimmed/{sample}_R2_val_2.fq.gz"
     output:
     #if statements have to be inline (each input is like a function)
-        r1_barcoded = "workup/fastqs/{sample}_R1.barcoded.fastq.gz",
-        r2_barcoded = "workup/fastqs/{sample}_R2.barcoded.fastq.gz"
+        r1_barcoded = out_dir + "workup/fastqs/{sample}_R1.barcoded.fastq.gz",
+        r2_barcoded = out_dir + "workup/fastqs/{sample}_R2.barcoded.fastq.gz"
     log:
-        "workup/logs/{sample}.bID.log"
+        out_dir + "workup/logs/{sample}.bID.log"
     shell:
         "java -jar {barcode_id_jar} \
         --input1 {input.r1} --input2 {input.r2} \
@@ -224,9 +232,9 @@ rule barcode_id:
 #Get ligation efficiency
 rule get_ligation_efficiency:
     input:
-        r1 = "workup/fastqs/{sample}_R1.barcoded.fastq.gz"
+        r1 = out_dir + "workup/fastqs/{sample}_R1.barcoded.fastq.gz"
     output:
-        temp("workup/{sample}.ligation_efficiency.txt")
+        temp(out_dir + "workup/{sample}.ligation_efficiency.txt")
     shell:
         "python {lig_eff} {input.r1} > {output}"
 
@@ -234,9 +242,9 @@ rule get_ligation_efficiency:
 #Combine ligation efficiency from all samples into a single file
 rule cat_ligation_efficiency:
     input:
-        expand("workup/{sample}.ligation_efficiency.txt", sample=ALL_SAMPLES)
+        expand(out_dir + "workup/{sample}.ligation_efficiency.txt", sample=ALL_SAMPLES)
     output:
-        "workup/ligation_efficiency.txt"
+        out_dir + "workup/ligation_efficiency.txt"
     shell:
         "tail -n +1 {input} > {output}"
 
@@ -247,14 +255,53 @@ rule full_barcode:
     remove incomplete barcodes
     '''
     input:
-        "workup/fastqs/{sample}_R1.barcoded.fastq.gz"
+        out_dir + "workup/fastqs/{sample}_R1.barcoded.fastq.gz"
     output:
-        "workup/fastqs/{sample}_R1.barcoded_full.fastq.gz",
-        "workup/fastqs/{sample}_R1.barcoded_short.fastq.gz"
+        out_dir + "workup/fastqs/{sample}_R1.barcoded_full.fastq.gz",
+        out_dir + "workup/fastqs/{sample}_R1.barcoded_short.fastq.gz"
     log:
-        "workup/logs/{sample}_DPM.log"
+        out_dir + "workup/logs/{sample}_DPM.log"
     shell:
         "python {split_fq} --r1 {input} &> {log}"
+
+
+rule cutadapt:
+    '''
+    Trim DPM if read through reads
+    DPM from right GATCGGAAGAG
+    DPM from left GGTGGTCTT ^ anchored (only appears at the start of read)
+    '''
+    input:
+        out_dir + "workup/fastqs/{sample}_R1.barcoded_full.fastq.gz"
+    output:
+        fastq=out_dir + "workup/trimmed/{sample}_R1.barcoded.RDtrim.fastq.gz",
+        qc=out_dir + "workup/trimmed/{sample}_R1.barcoded.RDtrim.qc.txt"
+    params:
+        "-a GATCGGAAGAG -g file:dpm96.fasta"
+    log:
+        "logs/cutadapt/{sample}.log"
+    threads: 10
+    wrapper:
+        "0.38.0/bio/cutadapt/se"
+
+# rule cutadapt:
+  
+#     input:
+#         [out_dir + "workup/trimmed/{sample}_R1_val_1.fq.gz", 
+#         out_dir + "workup/trimmed/{sample}_R2_val_2.fq.gz"]
+#     output:LES)
+#         fastq1=out_dir + "workup/trimmed/{sample}_R1_val_1_RDtrim.fq.gz",
+#         fastq2=out_dir + "workup/trimmed/{sample}_R2_val_2_RDtrim.fq.gz",
+#         qc=out_dir + "workup/trimmed/{sample}.RDtrim.qc.txt"
+#     threads: 10
+#     params:
+#         adapters_r1 = "-a GATCGGAAGAG -g file:dpm96.fasta",
+#         adapters_r2 = "",
+#         others = "--minimum-length 20"
+#     log:
+#         out_dir + "workup/logs/cutadapt/{sample}.log"
+#     wrapper:
+#         "0.38.0/bio/cutadapt/pe"
 
 ############################################################################################
 #DNA alignment
@@ -267,12 +314,12 @@ rule bowtie2_align:
     -F: Do not output alignments with any bits set in INT present in the FLAG field
     '''
     input:
-        fq="workup/fastqs/{sample}_R1.barcoded_full.fastq.gz"
+        fq=out_dir + "workup/trimmed/{sample}_R1.barcoded.RDtrim.fastq.gz"
     output:
-        "workup/alignments/{sample}.DNA.bowtie2.mapq20.bam"
+        out_dir + "workup/alignments/{sample}.DNA.bowtie2.mapq20.bam"
     threads: 10
     log:
-        "workup/logs/{sample}.bowtie2.log"
+        out_dir + "workup/logs/{sample}.bowtie2.log"
     conda:
         "envs/bowtie2.yaml"
     shell:
@@ -287,11 +334,11 @@ rule bowtie2_align:
 
 rule add_chr:
     input:
-        "workup/alignments/{sample}.DNA.bowtie2.mapq20.bam"
+        out_dir + "workup/alignments/{sample}.DNA.bowtie2.mapq20.bam"
     output:
-        "workup/alignments/{sample}.DNA.chr.bam"
+        out_dir + "workup/alignments/{sample}.DNA.chr.bam"
     log:
-        "workup/logs/{sample}.DNA_bcs.log"
+        out_dir + "workup/logs/{sample}.DNA_chr.log"
     conda:
         "envs/python_dep.yaml"
     shell:
@@ -301,9 +348,9 @@ rule add_chr:
 
 rule repeat_mask:
     input:
-        "workup/alignments/{sample}.DNA.chr.bam"
+        out_dir + "workup/alignments/{sample}.DNA.chr.bam"
     output:
-        "workup/alignments/{sample}.DNA.chr.masked.bam"
+        out_dir + "workup/alignments/{sample}.DNA.chr.masked.bam"
     conda:
         "envs/bedtools.yaml"
     shell:
@@ -314,11 +361,11 @@ rule repeat_mask:
 
 rule make_clusters:
     input:
-        "workup/alignments/{sample}.DNA.chr.masked.bam",
+        out_dir + "workup/alignments/{sample}.DNA.chr.masked.bam",
     output:
-        "workup/clusters/{sample}.DNA.clusters"
+        out_dir + "workup/clusters/{sample}.DNA.clusters"
     log:
-        "workup/logs/{sample}.make_clusters.log"
+        out_dir + "workup/logs/{sample}.make_clusters.log"
     conda:
         "envs/python_dep.yaml"
     shell:
@@ -328,54 +375,54 @@ rule make_clusters:
 rule multiqc:
     input:
         #needs to be the last file produced in the pipeline 
-        expand("workup/clusters/{sample}.DNA.clusters", sample=ALL_SAMPLES)
+        expand(out_dir + "workup/clusters/{sample}.DNA.clusters", sample=ALL_SAMPLES)
     output:
-        "workup/qc/multiqc_report.html"
+        out_dir + "workup/qc/multiqc_report.html"
     log:
-        "workup/logs/multiqc.log"
+        out_dir + "workup/logs/multiqc.log"
     conda: 
         "envs/qc.yaml"
     shell: 
-        "multiqc workup -o workup/qc"
+        "multiqc workup -o {out_dir}workup/qc"
 
 
 rule plot_cluster_size:
     input:
-        expand("workup/clusters/{sample}.DNA.clusters", sample=ALL_SAMPLES)
+        expand(out_dir + "workup/clusters/{sample}.DNA.clusters", sample=ALL_SAMPLES)
     output:
-        "cluster_sizes.pdf",
-        "cluster_sizes.png"
+        out_dir + "workup/clusters/cluster_sizes.pdf",
+        out_dir + "workup/clusters/cluster_sizes.png"
     log:
-        "workup/logs/cluster_sizes.log"
+        out_dir + "workup/logs/cluster_sizes.log"
     conda:
         "envs/r.yaml"
     shell:
         '''
         Rscript scripts/r/get_cluster_size_distribution.r \
-            workup/clusters/ \
+            {out_dir}workup/clusters/ \
             DNA.clusters
         '''
 
 rule make_heatmap_matrix:
     input:
-        "workup/clusters/{sample}.DNA.clusters"
+        out_dir + "workup/clusters/{sample}.DNA.clusters"
     output:
-        "workup/heatmap/{sample}.DNA.iced.txt",
-        "workup/heatmap/{sample}.DNA.bias.txt",
-        "workup/heatmap/{sample}.DNA.raw.txt",
-        "workup/heatmap/{sample}.DNA.final.txt",
+        out_dir + "workup/heatmap/{sample}.DNA.iced.txt",
+        out_dir + "workup/heatmap/{sample}.DNA.bias.txt",
+        out_dir + "workup/heatmap/{sample}.DNA.raw.txt",
+        out_dir + "workup/heatmap/{sample}.DNA.final.txt",
     conda:
         "envs/python_dep.yaml"
     log:
-        "workup/clusters/{sample}.DNA.matrix.log"
+        out_dir + "workup/clusters/{sample}.DNA.matrix.log"
     shell:
         '''
         python {clusters_heatmap} \
-        --clusters workup/clusters/{wildcards.sample}.DNA.clusters \
-        --raw_contacts workup/heatmap/{wildcards.sample}.DNA.raw.txt \
-        --biases workup/heatmap/{wildcards.sample}.DNA.bias.txt \
-        --iced workup/heatmap/{wildcards.sample}.DNA.iced.txt \
-        --output workup/heatmap/{wildcards.sample}.DNA.final.txt \
+        --clusters {out_dir}workup/clusters/{wildcards.sample}.DNA.clusters \
+        --raw_contacts {out_dir}workup/heatmap/{wildcards.sample}.DNA.raw.txt \
+        --biases {out_dir}workup/heatmap/{wildcards.sample}.DNA.bias.txt \
+        --iced {out_dir}workup/heatmap/{wildcards.sample}.DNA.iced.txt \
+        --output {out_dir}workup/heatmap/{wildcards.sample}.DNA.final.txt \
         --assembly {assembly} \
         --chromosome {chromosome} \
         --downweighting {downweighting} \
@@ -385,12 +432,12 @@ rule make_heatmap_matrix:
 
 rule plot_heatmap:
     input:
-        "workup/heatmap/{sample}.DNA.final.txt"
+        out_dir + "workup/heatmap/{sample}.DNA.final.txt"
     output:
-        "workup/heatmap/{sample}.DNA.final.pdf",
-        "workup/heatmap/{sample}.DNA.final.png"
+        out_dir + "workup/heatmap/{sample}.DNA.final.pdf",
+        out_dir + "workup/heatmap/{sample}.DNA.final.png"
     log:
-        "workup/logs/{sample}.heatmap.log"
+        out_dir + "workup/logs/{sample}.heatmap.log"
     conda:
         "envs/r.yaml"
     shell:

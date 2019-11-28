@@ -26,7 +26,7 @@ normalizeCount  <- function(x) {
 
 processFile <- function(f) {
     sizes <- list(0, 0, 0, 0, 0)
-
+    
     tryCatch({
         con <- file(f, open = 'r')
         while (length(oneLine <- readLines(con, n = 1, warn = FALSE)) > 0) {
@@ -40,7 +40,7 @@ processFile <- function(f) {
     }, finally = {
         close(con)
     })
-
+    
     sizes <- normalizeCount(sizes)
     df <- data.frame(unlist(sizes))
     colnames(df) <- c("count")
@@ -56,16 +56,16 @@ parseArgs <- function() {
     args
 }
 
-plotCounts <- function(df) {
+plotCounts <- function(df, dir_out) {
     p <- ggplot(df, aes(x = filename, y = count, fill = category))
     p <- p + geom_bar(stat = "identity")
     p <- p + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
-
-    png("cluster_sizes.png")
+    
+    png(paste(dir_out, "/cluster_sizes.png", sep=""))
     print(p)
     graphics.off()
-
-    pdf("cluster_sizes.pdf")
+    
+    pdf(paste(dir_out, "/cluster_sizes.pdf", sep=""))
     print(p)
     graphics.off()
 }
@@ -75,7 +75,7 @@ main <- function() {
     files <- list.files(path = args[1], pattern = args[2], full.names = TRUE, recursive = FALSE)
     dfs <- lapply(files, processFile)
     df <- do.call("rbind", dfs)
-    plotCounts(df)
+    plotCounts(df, args[1])
 }
 
 main()

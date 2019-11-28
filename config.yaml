@@ -2,9 +2,13 @@
 email: "your_email@domain"
 #Location of the config file for barcodeIdentification
 bID: "./config.txt"
+#Location of the samples json file produced with fastq2json.py script
+samples: "./samples.json"
+#output directory
+output_dir: ""
 #Currently "mm10" and "hg38" available
-assembly: "mm10"
-#Number of barcodes used (this includes DPM/RPM for RNA-DNA)
+assembly: "hg38"
+#Number of barcodes used
 num_tags: "5"
 #Repeat mask used for filtering DNA contacts
 mask:
@@ -13,8 +17,7 @@ mask:
 #Bowtie2 indexes location with prefix
 bowtie2_index:
     mm10: "/groups/guttman/Peter/genomes/GRCm38.p6/GRCm38.p6"
-    hg38: "/groups/guttman/Peter/genomes/GRCh38/GRCh38"
-
+    hg38: "/mnt/data/genomes/GRCh38/GRCh38"
 #Setting for mating heatmap matrix
 #Plot a chromosome 'chr1' or plot genome wide 'genome'
 chromosome:

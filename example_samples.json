@@ -1,0 +1,10 @@
+{
+    "4DNFI8ZROQ87_4DNFIY9HL35V": {
+        "R1": [
+            "fastqs/4DNFI8ZROQ87_4DNFIY9HL35V_R1.fastq.gz"
+        ],
+        "R2": [
+            "fastqs/4DNFI8ZROQ87_4DNFIY9HL35V_R2.fastq.gz"
+        ]
+    }
+}
