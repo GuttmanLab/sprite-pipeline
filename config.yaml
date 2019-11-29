@@ -12,8 +12,8 @@ assembly: "hg38"
 num_tags: "5"
 #Repeat mask used for filtering DNA contacts
 mask:
-    mm10: "mm10_blacklist.rmsk.milliDivLessThan140.bed"
-    hg38: "hg38_blacklist_rmsk.milliDivLessThan140.bed"
+    mm10: "mm10_blacklist_rmsk.milliDivLessThan140.bed.gz"
+    hg38: "hg38_blacklist_rmsk.milliDivLessThan140.bed.gz"
 #Bowtie2 indexes location with prefix
 bowtie2_index:
     mm10: "/groups/guttman/Peter/genomes/GRCm38.p6/GRCm38.p6"
