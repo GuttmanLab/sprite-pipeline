@@ -4,6 +4,8 @@ from __future__ import division
 import argparse
 import math
 
+__author__ = "Noah Ollikainen, Charlotte A Lai"
+
 def main():
     """Counts the number of spurious mouse-human contacts in a bead-mixing
     SPRITE experiment. Used to estimate noise.

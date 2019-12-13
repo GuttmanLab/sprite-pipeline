@@ -1,5 +1,7 @@
 #!/usr/bin/env Rscript
 
+#' @author Noah Ollikainen, Charlotte A Lai, Peter Chovanec
+
 # This program plots SPRITE clusters as a barplot, with each bar corresponding
 # to the read-coverage over a chromosome. If passed only a single clusters
 # file, this program will plot absolute coverage   

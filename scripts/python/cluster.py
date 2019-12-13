@@ -4,6 +4,8 @@ import gzip
 import os
 import sys
 
+__author__ = "Noah Ollikainen, Charlotte A Lai, Peter Chovanec"
+
 class Position:
     """This class represents a genomic position, with type of nucleic acid (DNA)
 

@@ -1,5 +1,7 @@
 #!/usr/bin/env Rscript
 
+#' @author Noah Ollikainen, Charlotte A Lai, Peter Chovanec
+
 if(!require(ggplot2)){
     install.packages("ggplot2", repos='http://cran.us.r-project.org')
     library(ggplot2)

@@ -1,4 +1,6 @@
+#!/usr/bin/env Rscript
 
+#' @author Peter Chovanec, Noah Ollikainen
 
 if(!require(gplots)){
   install.packages("gplots", repos='http://cran.us.r-project.org')

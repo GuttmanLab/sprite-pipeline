@@ -3,6 +3,8 @@ import argparse
 import pysam
 import assembly
 
+__author__ = "Peter Chovanec"
+
 def main():
     args = parse_arguments()
     filter_reads(args)

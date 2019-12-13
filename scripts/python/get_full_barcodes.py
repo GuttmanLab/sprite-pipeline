@@ -4,6 +4,7 @@ import os
 import argparse
 import re
 
+__author__ = "Peter Chovanec"
 
 def parse_args():
 

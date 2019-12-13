@@ -1,6 +1,8 @@
 import argparse
 import cluster as c
 
+__author__ = "Noah Ollikainen, Charlotte A Lai"
+
 def main():
     args = parse_arguments()
     clusters = c.get_clusters(args.input, args.num_tags)

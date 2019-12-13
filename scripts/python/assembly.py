@@ -1,5 +1,7 @@
 from collections import OrderedDict
 
+__author__ = "Noah Ollikainen, Charlotte A Lai, Peter Chovanec"
+
 class Assembly(object):
     _chromsizes = None
     _resolution = None

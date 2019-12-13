@@ -5,20 +5,22 @@ import assembly
 import numpy as np
 import subprocess
 
+__author__ = "Noah Ollikainen, Charlotte A Lai"
+
 class Downweighting(Enum):
     """An enumeration of downweighting schemes.
 
     NONE -- No downweighting. Each contact has a value of 1.
     N_MINUS_ONE -- A contact from a cluster of n reads has a value of
                    1 /(n - 1).
-    N_OVER_TWO -- A contact form a cluster of n reads has a value of
+    TWO_OVER_N -- A contact form a cluster of n reads has a value of
                   2 / n.
     UNKNOWN -- A default downweighing scheme for error checking.
     """
 
     NONE = 1
     N_MINUS_ONE = 2
-    N_OVER_TWO = 3
+    TWO_OVER_N = 3
     UNKNOWN = 4
 
 
@@ -51,8 +53,8 @@ class Contacts:
             self._downweighting = Downweighting.NONE
         elif downweighting == "n_minus_one":
             self._downweighting = Downweighting.N_MINUS_ONE
-        elif downweighting == "n_over_two":
-            self._downweighting = Downweighting.N_OVER_TWO
+        elif downweighting == "TWO_OVER_N":
+            self._downweighting = Downweighting.TWO_OVER_N
         else:
             self._downweighting = Downweighting.UNKNOWN
 
@@ -251,7 +253,7 @@ class Contacts:
         """Stores all pairwise contacts implied by one SPRITE cluster."""
 
         if len(bins) > 1:
-            if self._downweighting == Downweighting.N_OVER_TWO:
+            if self._downweighting == Downweighting.TWO_OVER_N:
                 inc = 2.0 / len(bins)
             elif self._downweighting == Downweighting.N_MINUS_ONE:
                 inc = 1.0 / (len(bins) - 1)

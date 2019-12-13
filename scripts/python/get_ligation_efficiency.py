@@ -5,6 +5,8 @@ import pysam
 import re
 import sys
 
+__author__ = "Noah Ollikainen, Charlotte A Lai"
+
 # Program for checking barcoding success rate
 
 def main():

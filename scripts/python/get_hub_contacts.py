@@ -3,6 +3,8 @@ import assembly
 import numpy as np
 import numpy.ma as ma
 
+__author__ = "Noah Ollikainen, Charlotte A Lai"
+
 def main():
     args = parse_arguments()
 

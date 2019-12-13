@@ -2,6 +2,8 @@
 import argparse
 import pysam
 
+__author__ = "Noah Ollikainen, Charlotte A Lai"
+
 def main():
     args = parse_arguments()
     filter_reads(args)

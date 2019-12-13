@@ -63,7 +63,7 @@ except:
 #Make pipeline compatible for multiple assemblies
 try:
     assembly = config['assembly']
-    assert assembly in ['mm10', 'hg38', 'halo'], 'Only "mm10" or "hg38" currently supported'
+    assert assembly in ['mm10', 'hg38'], 'Only "mm10" or "hg38" currently supported'
     print('Using', assembly)
 except:
     print('Config "assembly" not specified, defaulting to "mm10"')
@@ -108,10 +108,10 @@ except:
 
 try:
     samples = config['samples']
-    print('Using samples file:', samples)
+    # print('Using samples file:', samples)
 except:
     samples = './samples.json'
-    print('Defaulting to working directory for samples json file')
+    # print('Defaulting to working directory for samples json file')
 
 
 #get all samples from fastq Directory using the fastq2json.py scripts, then just
@@ -124,7 +124,7 @@ for SAMPLE, file in FILES.items():
     ALL_FASTQ.extend([os.path.abspath(i) for i in file.get('R1')])
     ALL_FASTQ.extend([os.path.abspath(i) for i in file.get('R2')])
 
-CONFIG = [out_dir + "workup/logs/config_" + run_date + "log"]
+CONFIG = [out_dir + "workup/logs/config_" + run_date + "yaml"]
 
 #Shared
 TRIM = expand(out_dir + "workup/trimmed/{sample}_{read}.fq.gz", sample = ALL_SAMPLES, 
@@ -206,7 +206,7 @@ rule log_config:
     input:
         config_path
     output:
-        out_dir + "workup/logs/config_" + run_date + "log"
+        out_dir + "workup/logs/config_" + run_date + "yaml"
     shell:
         "cp {input} {output}"
 
@@ -235,6 +235,8 @@ rule get_ligation_efficiency:
         r1 = out_dir + "workup/fastqs/{sample}_R1.barcoded.fastq.gz"
     output:
         temp(out_dir + "workup/{sample}.ligation_efficiency.txt")
+    conda:
+        "envs/python_dep.yaml"
     shell:
         "python {lig_eff} {input.r1} > {output}"
 

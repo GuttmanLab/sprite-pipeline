@@ -1,6 +1,8 @@
 from collections import defaultdict
 import sys
 
+__author__ = "Noah Ollikainen, Charlotte A Lai"
+
 barcode_to_positions = defaultdict(list)
 
 with open(sys.argv[1], 'r') as f:

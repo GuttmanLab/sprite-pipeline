@@ -1,6 +1,8 @@
 import argparse
 from contact import Contacts
 
+__author__ = "Noah Ollikainen, Charlotte A Lai"
+
 def main():
     args = parse_arguments()
 
