@@ -390,7 +390,7 @@ rule multiqc:
     conda: 
         "envs/qc.yaml"
     shell: 
-        "multiqc workup -o {out_dir}workup/qc"
+        "multiqc {out_dir}workup -o {out_dir}workup/qc"
 
 
 rule plot_cluster_size:
