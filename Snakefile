@@ -140,7 +140,7 @@ MULTI_QC = [out_dir + "workup/qc/multiqc_report.html"]
 CHR_DNA = expand(out_dir + "workup/alignments/{sample}.DNA.chr.bam", sample=ALL_SAMPLES)
 BARCODE_FULL = expand(out_dir + "workup/fastqs/{sample}_R1.barcoded_full.fastq.gz", sample=ALL_SAMPLES)
 
-Bt2_DNA_ALIGN = expand("workup/alignments/{sample}.DNA.bowtie2.mapq20.bam", 
+Bt2_DNA_ALIGN = expand(out_dir + "workup/alignments/{sample}.DNA.bowtie2.mapq20.bam", 
                        sample=ALL_SAMPLES)
 #DNA-DNA
 BARCODEID = expand(out_dir + "workup/fastqs/{sample}_{read}.barcoded.fastq.gz", 
