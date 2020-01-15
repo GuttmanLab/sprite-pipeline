@@ -53,7 +53,7 @@ class Contacts:
             self._downweighting = Downweighting.NONE
         elif downweighting == "n_minus_one":
             self._downweighting = Downweighting.N_MINUS_ONE
-        elif downweighting == "TWO_OVER_N":
+        elif downweighting == "two_over_n":
             self._downweighting = Downweighting.TWO_OVER_N
         else:
             self._downweighting = Downweighting.UNKNOWN

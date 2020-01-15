@@ -22,9 +22,9 @@ bowtie2_index:
 #Plot a chromosome 'chr1' or plot genome wide 'genome'
 chromosome:
     - genome
-# Options 'none', 'n_minus_one', 'n_over_two'
+# Options 'none', 'n_minus_one', 'two_over_n'
 downweighting:
-    - n_over_two
+    - two_over_n
 #Number of ICE iterations 
 ice_iterations:
     - 100

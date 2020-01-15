@@ -7,6 +7,7 @@ Aim: A Snakemake workflow to process DNA-DNA SPRITE-seq data
 import os 
 import sys
 import datetime
+from pathlib import Path
 
 #when making dag.pdf all print statements need to be commented out, otherwise it will cause an error!
 
@@ -113,6 +114,10 @@ except:
     samples = './samples.json'
     # print('Defaulting to working directory for samples json file')
 
+#make output directories (aren't created automatically on cluster)
+Path(out_dir + "workup/logs/cluster").mkdir(parents=True, exist_ok=True)
+out_created = os.path.exists(out_dir + "workup/logs/cluster")
+print('Output logs path created:', out_created)
 
 #get all samples from fastq Directory using the fastq2json.py scripts, then just
 #load the json file with the samples

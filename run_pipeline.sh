@@ -1,9 +1,5 @@
 #!/bin/bash
 
-mkdir -p workup
-mkdir -p workup/logs
-mkdir -p workup/logs/cluster
-
 snakemake \
 --snakefile Snakefile \
 --use-conda \
