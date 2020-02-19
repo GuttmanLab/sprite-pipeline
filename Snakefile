@@ -433,9 +433,12 @@ rule make_heatmap_matrix:
         --assembly {assembly} \
         --chromosome {chromosome} \
         --downweighting {downweighting} \
-        --hicorrector {hicorrector}
+        --hicorrector {hicorrector} \
+        --resolution {resolution} \
+        --iterations {ice_iterations} \
+        --max_cluster_size {max_cluster_size} \
+        --min_cluster_size {min_cluster_size}
         '''
-
 
 rule plot_heatmap:
     input:
