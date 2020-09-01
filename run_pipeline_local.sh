@@ -3,4 +3,5 @@
 snakemake \
 --snakefile Snakefile \
 --use-conda \
---cores 10
+--cores 10 \
+--configfile config.yaml

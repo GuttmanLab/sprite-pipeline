@@ -5,6 +5,7 @@ snakemake \
 --use-conda \
 -j 32 \
 --cluster-config cluster.yaml \
+--configfile config.yaml \
 --cluster "sbatch -c {cluster.cpus} \
 -t {cluster.time} -N {cluster.nodes} \
 --mem {cluster.mem} \

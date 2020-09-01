@@ -3,13 +3,12 @@ Author: Peter Chovanec
 Aim: A Snakemake workflow to process DNA-DNA SPRITE-seq data
 '''
 
-
 import os 
 import sys
 import datetime
 from pathlib import Path
-
-#when making dag.pdf all print statements need to be commented out, otherwise it will cause an error!
+from shutil import which
+import yaml
 
 #Location of scripts
 barcode_id_jar = "scripts/java/BarcodeIdentification_v1.2.0.jar"
@@ -21,78 +20,74 @@ get_cluster_size = "scripts/r/get_cluster_size_distribution.r"
 hicorrector = "scripts/HiCorrector_1.2/bin/ic"
 clusters_heatmap = "scripts/python/get_sprite_contacts.py"
 
+
+# Check if file is executable
+assert which(hicorrector) is not None, 'HiCorrector ic needs to be executable'
+
 #Copy config file into logs
 v = datetime.datetime.now()
 run_date = v.strftime('%Y.%m.%d.')
 
 #Load config.yaml file
-
-try:
-    config_path = config["config_path"]
-except:
-    config_path = 'config.yaml'
-
-configfile: config_path
+INFO = ''
 
 try:
     email = config['email']
 except:
-    print("Won't send email on error")
+    INFO += "Won't send email on error"
     email = None
 
 try:
     out_dir = config['output_dir']
-    print('All data will be written to:', out_dir)
+    INFO += 'All data will be written to: ' + out_dir
 except:
     out_dir = ''
-    print('Defaulting to working directory as output directory')
+    INFO += 'Defaulting to working directory as output directory'
 
 try:
     bid_config = config['bID']
-    print('Using BarcodeID config', bid_config)
+    INFO += 'Using BarcodeID config ' + bid_config
 except:
     bid_config = 'workup/config.txt'
-    print('Config "bID" not specified, looking for config at:', bid_config)
+    INFO += 'Config "bID" not specified, looking for config at: ' + bid_config
 
 try:
     num_tags = config['num_tags']
-    print('Using', num_tags, 'tags')
+    INFO += 'Using ' + num_tags + ' tags'
 except:
     num_tags = "5"
-    print('Config "num_tags" not specified, using:', num_tags)
+    INFO += 'Config "num_tags" not specified, using:' + num_tags
 
 #Make pipeline compatible for multiple assemblies
 try:
     assembly = config['assembly']
     assert assembly in ['mm10', 'hg38'], 'Only "mm10" or "hg38" currently supported'
-    print('Using', assembly)
+    INFO += 'Using ' + assembly
 except:
-    print('Config "assembly" not specified, defaulting to "mm10"')
+    INFO += 'Config "assembly" not specified, defaulting to "mm10"'
     assembly = 'mm10'
 
 try:
     bowtie2_index = config['bowtie2_index'][config['assembly']]
 except:
-    print('Bowtie2 index not specified in config.yaml')
-    sys.exit() #no default, exit
+    sys.exit('Bowtie2 index not specified in config.yaml') #no default, exit
 
 
 try:
     mask = config['mask'][config['assembly']]
 except:
-    print('Mask path not specified in config.yaml')
-    sys.exit() #no default, exit
+    sys.exit('Mask path not specified in config.yaml') #no default, exit
 
 try:
     chromosome = config['chromosome']
 except:
     chromosome = 'genome'
-    print('Defaulting to "genome"')
+    INFO += 'Defaulting to "genome"'
 try:
     downweighting = config['downweighting']
 except:
-    downweighting = 'n_over_two'
-    print('Defaulting to "n_over_two"')
+    downweighting = 'two_over_n'
+    INFO += 'Defaulting to "two_over_n"'
 
 try:
     ice_iterations = config['ice_iterations']
@@ -117,7 +112,7 @@ except:
 #make output directories (aren't created automatically on cluster)
 Path(out_dir + "workup/logs/cluster").mkdir(parents=True, exist_ok=True)
 out_created = os.path.exists(out_dir + "workup/logs/cluster")
-print('Output logs path created:', out_created)
+INFO += 'Output logs path created: ' + str(out_created)
 
 #get all samples from fastq Directory using the fastq2json.py scripts, then just
 #load the json file with the samples
@@ -160,17 +155,34 @@ CLUSTERS_HP = expand([out_dir + "workup/heatmap/{sample}.DNA.iced.txt",
 PLOT = expand([out_dir + "workup/heatmap/{sample}.DNA.final.pdf",
         out_dir + "workup/heatmap/{sample}.DNA.final.png"], sample=ALL_SAMPLES)
 
+
+################################################################################
+# Execute before workflow starts
+################################################################################
+onstart:
+    print(INFO)
+
+################################################################################
+# Rule all
+################################################################################
+
 rule all:
     input: CONFIG + ALL_FASTQ + TRIM + TRIM_LOG + BARCODE_FULL + BARCODEID + LE_LOG_ALL +
            TRIM_RD + Bt2_DNA_ALIGN + CHR_DNA + MASKED + CLUSTERS + MULTI_QC + CLUSTERS_PLOT +
            CLUSTERS_HP + PLOT
 
+################################################################################
+# Log
+################################################################################
 
-
-#Send and email if an error occurs during execution
-if email != None:
-    onerror:
-        shell('mail -s "an error occurred" ' + email + ' < {log}')
+rule log_config:
+    '''Copy config.yaml and place in logs folder with the date run
+    '''
+    output:
+        out_dir + "workup/logs/config_" + run_date + "yaml"
+    run:
+        with open(output[0], 'w') as out:
+            yaml.dump(config, out, default_flow_style=False)
 
 
 ####################################################################################################
@@ -194,7 +206,7 @@ rule adaptor_trimming_pe:
     log:
         out_dir + "workup/logs/{sample}.trim_galore.logs"
     conda:
-        "envs/trim_galore.yaml"
+        "envs/sprite.yaml"
     shell:
         "trim_galore \
         --paired \
@@ -203,17 +215,6 @@ rule adaptor_trimming_pe:
         --fastqc \
         -o {out_dir}workup/trimmed/ \
         {input} &> {log}"
-
-
-rule log_config:
-    '''Copy config.yaml and place in logs folder with the date run
-    '''
-    input:
-        config_path
-    output:
-        out_dir + "workup/logs/config_" + run_date + "yaml"
-    shell:
-        "cp {input} {output}"
 
 
 #Identify barcodes using BarcodeIdentification_v1.2.0.jar
@@ -241,7 +242,7 @@ rule get_ligation_efficiency:
     output:
         temp(out_dir + "workup/{sample}.ligation_efficiency.txt")
     conda:
-        "envs/python_dep.yaml"
+        "envs/sprite.yaml"
     shell:
         "python {lig_eff} {input.r1} > {output}"
 
@@ -289,26 +290,8 @@ rule cutadapt:
         "logs/cutadapt/{sample}.log"
     threads: 10
     wrapper:
-        "0.38.0/bio/cutadapt/se"
+        "0.65.0/bio/cutadapt/se"
 
-# rule cutadapt:
-  
-#     input:
-#         [out_dir + "workup/trimmed/{sample}_R1_val_1.fq.gz", 
-#         out_dir + "workup/trimmed/{sample}_R2_val_2.fq.gz"]
-#     output:LES)
-#         fastq1=out_dir + "workup/trimmed/{sample}_R1_val_1_RDtrim.fq.gz",
-#         fastq2=out_dir + "workup/trimmed/{sample}_R2_val_2_RDtrim.fq.gz",
-#         qc=out_dir + "workup/trimmed/{sample}.RDtrim.qc.txt"
-#     threads: 10
-#     params:
-#         adapters_r1 = "-a GATCGGAAGAG -g file:dpm96.fasta",
-#         adapters_r2 = "",
-#         others = "--minimum-length 20"
-#     log:
-#         out_dir + "workup/logs/cutadapt/{sample}.log"
-#     wrapper:
-#         "0.38.0/bio/cutadapt/pe"
 
 ############################################################################################
 #DNA alignment
@@ -328,7 +311,7 @@ rule bowtie2_align:
     log:
         out_dir + "workup/logs/{sample}.bowtie2.log"
     conda:
-        "envs/bowtie2.yaml"
+        "envs/sprite.yaml"
     shell:
         "(bowtie2 \
         -p 10 \
@@ -347,7 +330,7 @@ rule add_chr:
     log:
         out_dir + "workup/logs/{sample}.DNA_chr.log"
     conda:
-        "envs/python_dep.yaml"
+        "envs/sprite.yaml"
     shell:
         '''
         python {add_chr} -i {input} -o {output} --assembly {assembly} &> {log}
@@ -359,7 +342,7 @@ rule repeat_mask:
     output:
         out_dir + "workup/alignments/{sample}.DNA.chr.masked.bam"
     conda:
-        "envs/bedtools.yaml"
+        "envs/sprite.yaml"
     shell:
         '''
         bedtools intersect -v -a {input} -b {mask} > {output}
@@ -374,7 +357,7 @@ rule make_clusters:
     log:
         out_dir + "workup/logs/{sample}.make_clusters.log"
     conda:
-        "envs/python_dep.yaml"
+        "envs/sprite.yaml"
     shell:
         "python {get_clusters} -i {input} -o {output} -n {num_tags} &> {log}"
 
@@ -388,9 +371,14 @@ rule multiqc:
     log:
         out_dir + "workup/logs/multiqc.log"
     conda: 
-        "envs/qc.yaml"
+        "envs/sprite.yaml"
     shell: 
-        "multiqc {out_dir}workup -o {out_dir}workup/qc"
+        '''
+        if [ ! -f {output} ]
+        then
+            multiqc {out_dir}workup -o {out_dir}workup/qc
+        fi
+        '''
 
 
 rule plot_cluster_size:
@@ -402,7 +390,7 @@ rule plot_cluster_size:
     log:
         out_dir + "workup/logs/cluster_sizes.log"
     conda:
-        "envs/r.yaml"
+        "envs/sprite.yaml"
     shell:
         '''
         Rscript scripts/r/get_cluster_size_distribution.r \
@@ -419,7 +407,7 @@ rule make_heatmap_matrix:
         out_dir + "workup/heatmap/{sample}.DNA.raw.txt",
         out_dir + "workup/heatmap/{sample}.DNA.final.txt",
     conda:
-        "envs/python_dep.yaml"
+        "envs/sprite.yaml"
     log:
         out_dir + "workup/clusters/{sample}.DNA.matrix.log"
     shell:
@@ -449,10 +437,19 @@ rule plot_heatmap:
     log:
         out_dir + "workup/logs/{sample}.heatmap.log"
     conda:
-        "envs/r.yaml"
+        "envs/sprite.yaml"
     shell:
         '''
         Rscript scripts/r/plot_heatmap.R \
             -i {input} \
             -m {max_val}
         '''
+
+
+################################################################################
+# If error occurs
+################################################################################
+#Send and email if an error occurs during execution
+if email != None:
+    onerror:
+        shell('mail -s "an error occurred" ' + email + ' < {log}')

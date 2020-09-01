@@ -27,12 +27,11 @@ FILES = defaultdict(lambda: defaultdict(list))
 ## build the dictionary with full path for each fastq.gz file
 for folder in args.fastq_dir:
 	for root, dirs, files in os.walk(folder):
-		for file in files:
-			if file.endswith("fastq.gz"):
-				full_path = join(root, file)
+		for f in files:
+			if f.endswith("fastq.gz") or f.endswith("fq.gz") or f.endswith("fastq") or f.endswith("fq"):
+				full_path = join(root, f)
 				#R1 will be forward reads, R2 will be reverse reads
-				#m = re.search(r"(.+)_(R[12])_[0-9]{3,4}.fastq.gz", file)
-				m = re.search(r"(.+)_(R[12]).fastq.gz", file)
+				m = re.search(r"(.+)_(R[12]).(fastq.gz|fq.gz|fastq|fq)", f)
 				if m:
 					sample = m.group(1)
 					reads = m.group(2)  
