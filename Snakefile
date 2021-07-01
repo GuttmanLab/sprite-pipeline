@@ -34,37 +34,37 @@ INFO = ''
 try:
     email = config['email']
 except:
-    INFO += "Won't send email on error"
+    INFO += "Won't send email on error\n"
     email = None
 
 try:
     out_dir = config['output_dir']
-    INFO += 'All data will be written to: ' + out_dir
+    INFO += 'All data will be written to: ' + out_dir + '\n'
 except:
     out_dir = ''
-    INFO += 'Defaulting to working directory as output directory'
+    INFO += 'Defaulting to working directory as output directory\n'
 
 try:
     bid_config = config['bID']
-    INFO += 'Using BarcodeID config ' + bid_config
+    INFO += 'Using BarcodeID config ' + bid_config + '\n'
 except:
     bid_config = 'workup/config.txt'
-    INFO += 'Config "bID" not specified, looking for config at: ' + bid_config
+    INFO += 'Config "bID" not specified, looking for config at: ' + bid_config + '\n'
 
 try:
     num_tags = config['num_tags']
-    INFO += 'Using ' + num_tags + ' tags'
+    INFO += 'Using ' + num_tags + ' tags \n'
 except:
     num_tags = "5"
-    INFO += 'Config "num_tags" not specified, using:' + num_tags
+    INFO += 'Config "num_tags" not specified, using:' + num_tags + '\n'
 
 #Make pipeline compatible for multiple assemblies
 try:
     assembly = config['assembly']
     assert assembly in ['mm10', 'hg38'], 'Only "mm10" or "hg38" currently supported'
-    INFO += 'Using ' + assembly
+    INFO += 'Using ' + assembly + '\n'
 except:
-    INFO += 'Config "assembly" not specified, defaulting to "mm10"'
+    INFO += 'Config "assembly" not specified, defaulting to "mm10"\n'
     assembly = 'mm10'
 
 try:
@@ -82,12 +82,12 @@ try:
     chromosome = config['chromosome']
 except:
     chromosome = 'genome'
-    INFO += 'Defaulting to "genome"'
+    INFO += 'Defaulting to "genome"\n'
 try:
     downweighting = config['downweighting']
 except:
     downweighting = 'two_over_n'
-    INFO += 'Defaulting to "two_over_n"'
+    INFO += 'Defaulting to "two_over_n"\n'
 
 try:
     ice_iterations = config['ice_iterations']
@@ -112,7 +112,7 @@ except:
 #make output directories (aren't created automatically on cluster)
 Path(out_dir + "workup/logs/cluster").mkdir(parents=True, exist_ok=True)
 out_created = os.path.exists(out_dir + "workup/logs/cluster")
-INFO += 'Output logs path created: ' + str(out_created)
+INFO += 'Output logs path created: ' + str(out_created) + '\n'
 
 #get all samples from fastq Directory using the fastq2json.py scripts, then just
 #load the json file with the samples
@@ -288,9 +288,18 @@ rule cutadapt:
         "-a GATCGGAAGAG -g file:dpm96.fasta"
     log:
         "logs/cutadapt/{sample}.log"
-    threads: 10
-    wrapper:
-        "0.65.0/bio/cutadapt/se"
+    threads: 
+        10
+    shell:
+        '''
+        cutadapt \
+        {params} \
+        -o {output.fastq} \
+        -j {threads} \
+        {input} \
+        1> {output.qc} 2> {log}
+        '''
+
 
 
 ############################################################################################
